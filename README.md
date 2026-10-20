@@ -24,14 +24,20 @@ Requirements:
 - Paseo 0.11.0 or later, with plugins enabled (**Settings → Plugins → Enable plugins**).
 - The `claude` and/or `codex` CLI installed where the daemon runs, the same ones Paseo already uses.
 
-On the daemon host:
+Install it from the Paseo plugin directory (or **Paseo Cafe**):
+
+```bash
+paseo plugin add jgreys/accounts
+```
+
+To run it from a checkout instead:
 
 ```bash
 git clone https://github.com/jgreys/paseo-accounts.git ~/projects/paseo-accounts
 paseo plugin install ~/projects/paseo-accounts
 ```
 
-Paseo runs the plugin from that folder, so after pulling or editing, apply changes with `paseo plugin reload paseo-accounts`.
+After pulling or editing a checkout, apply changes with `paseo plugin reload paseo-accounts`.
 
 Then open **Accounts** in the sidebar.
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1 - 2026-10-20
+
+- Expanded the overview: required CLIs, first-account setup, what the plugin accesses and what it sends.
+
 ## 1.0.0 - 2026-10-20
 
 First public release.
