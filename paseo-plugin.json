@@ -1,0 +1,10 @@
+{
+  "id": "paseo-accounts",
+  "name": "Paseo Accounts",
+  "description": "Use several Claude, ChatGPT and other AI subscriptions side by side in Paseo, and switch automatically when one hits its limit.",
+  "icon": "images/icon.png",
+  "media": ["images/accounts-dark.png", "images/agents.png", "images/activity.png", "images/accounts-light.png", "images/phone.png"],
+  "requirements": {
+    "paseo": ">=0.11.0"
+  }
+}

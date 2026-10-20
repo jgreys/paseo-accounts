@@ -1,0 +1,65 @@
+{
+  "name": "paseo-accounts",
+  "version": "1.0.0",
+  "description": "Use several Claude, ChatGPT and other AI subscriptions side by side in Paseo, and switch automatically when one hits its limit.",
+  "keywords": [
+    "paseo",
+    "paseo-plugin",
+    "claude",
+    "claude-code",
+    "codex",
+    "chatgpt",
+    "subscriptions",
+    "accounts",
+    "usage-limits",
+    "kimi",
+    "copilot",
+    "opencode",
+    "multi-account"
+  ],
+  "homepage": "https://github.com/jgreys/paseo-accounts#readme",
+  "bugs": {
+    "url": "https://github.com/jgreys/paseo-accounts/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jgreys/paseo-accounts.git"
+  },
+  "license": "MIT",
+  "author": "Greys",
+  "files": [
+    "paseo-plugin.json",
+    "index.client.tsx",
+    "index.server.ts",
+    "client/",
+    "server/",
+    "shared/",
+    "!**/*.test.ts",
+    "README.md",
+    "OVERVIEW.md",
+    "CHANGELOG.md",
+    "images/",
+    "LICENSE"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.server.json",
+    "test": "vitest run",
+    "audit:mobile": "! grep -rnE \"\\\\b(document|window|localStorage|navigator)\\\\.|<(div|span|p|a|button|input|img|ul|ol|li|section|header|footer|main|nav|form|label|h[1-6]|table|tr|td|svg|path|br|hr)[ >/]|className=|onClick=\" client/"
+  },
+  "devDependencies": {
+    "@getpaseo/client": "0.9.1",
+    "@getpaseo/plugin": "0.9.1",
+    "@getpaseo/protocol": "0.9.1",
+    "@tanstack/react-query": "^5.90.11",
+    "@types/node": "^22.20.4",
+    "@types/react": "~19.2.0",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7",
+    "zod": "^4.4.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
