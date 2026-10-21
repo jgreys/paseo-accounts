@@ -249,9 +249,13 @@ export class ClaudeAdapter implements FamilyAdapter {
     return new ClaudeLogin(command, [...prefix, "auth", "login", "--claudeai"], env, shim ? capture : null);
   }
 
-  async logout(home: string): Promise<void> {
+  async logout(home: string | null): Promise<void> {
     const { command, prefix } = await providerCommand("claude");
     const result = await run(command, [...prefix, "auth", "logout"], { env: spawnEnv(await this.env(home)), timeoutMs: 30_000 });
+    if (!home) {
+      if (result.code !== 0) throw new Error(`claude auth logout failed: ${result.stderr.trim() || `exit ${result.code}`}`);
+      return;
+    }
     if (result.code === 0 || process.platform !== "darwin") return; // Elsewhere the login lives in the home itself.
     // Don't leave a live refresh token behind in the keychain for a home that is about to be deleted.
     await run("/usr/bin/security", ["delete-generic-password", "-a", keychainAccount(), "-s", keychainService(home)], {

@@ -183,7 +183,7 @@ paseo-accounts never implements OAuth itself and never copies credentials betwee
 - Using a banked reset calls the provider's own reset endpoint with that account's sign-in, and only after you confirm (or turn on automatic use).
 - Removing an account moves its agents to the default account, then signs it out (`claude auth logout` / `codex` logout) and deletes its home. This happens once no agent is mid-turn on it. Abandoned sign-ins are cleaned up the same way.
 - An account that still has ChatGPT conversations on it can't be removed until you archive them or continue them elsewhere, because they can't move.
-- Your CLI login can't be removed from paseo-accounts.
+- Your CLI login stays listed. For Claude and ChatGPT, **Sign out** on its card signs the CLI out on that machine (`claude auth logout` / Codex logout) and moves its agents to your other accounts; **Sign in** puts the same or another account back. Other providers' CLI logins are signed out with their own CLI.
 
 ## Limitations
 

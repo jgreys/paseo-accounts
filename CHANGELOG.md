@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.3 - 2026-10-21
+
+- The Claude and ChatGPT CLI logins can be signed out from their account card (**Sign out**), then signed in again with the same or another account.
+
 ## 1.0.2 - 2026-10-21
 
 - The sidebar's Accounts item shows a badge with the number of signed-out accounts on the Accounts screen (Paseo 0.12 and later).

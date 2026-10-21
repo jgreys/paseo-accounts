@@ -329,8 +329,8 @@ export class CodexAdapter implements FamilyAdapter {
     return new CodexLogin(server, method, () => this.snapshots.delete(home ?? ""));
   }
 
-  async logout(home: string): Promise<void> {
-    this.snapshots.delete(home);
+  async logout(home: string | null): Promise<void> {
+    if (home) this.snapshots.delete(home);
     const server = await AppServer.open(spawnEnv(await this.env(home)));
     try {
       await server.request("account/logout");

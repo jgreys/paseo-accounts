@@ -1833,8 +1833,8 @@ export class Service {
     const state = await this.store.read();
     const account = findAccount(state, accountId);
     if (!account) throw new Error("That account no longer exists.");
-    if (account.kind === "main") {
-      throw new Error("Your CLI login can't be removed here. Sign out with `claude auth logout` or `codex logout` instead.");
+    if (account.kind === "main" && account.family !== "claude" && account.family !== "codex") {
+      throw new Error(`Sign out of ${PROVIDER_NAME[account.family]}'s CLI login with its own CLI.`);
     }
     if (!this.adapters[account.family].portable) {
       // These conversations can't move to another ChatGPT account, so removing theirs would strand them.
@@ -1857,6 +1857,19 @@ export class Service {
     const affected = Object.entries(state.sessions)
       .filter(([, session]) => session.accountId === accountId)
       .map(([agentId]) => agentId);
+    if (account.kind === "main") {
+      // The CLI login has no home to delete: sign the CLI out and keep the entry, so it can sign in again.
+      if (!account.signedIn) return 0;
+      await this.adapters[account.family].logout(null);
+      await this.store.update((draft) => {
+        const target = findAccount(draft, accountId);
+        if (target) target.signedIn = false;
+      });
+      this.setUsage(accountId, null);
+      console.log(`[paseo-accounts] signed out the ${FAMILY_LABEL[account.family]} CLI login`);
+      await this.reconcile(paseo, "signed_out", affected, new Map([[account.id, account.label]]));
+      return affected.length;
+    }
     await this.store.update((draft) => {
       draft.accounts = draft.accounts.filter((entry) => entry.id !== accountId);
       draft.folders = draft.folders.filter((rule) => rule.accountId !== accountId);

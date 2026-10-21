@@ -372,6 +372,30 @@ describe("forking to the other provider", () => {
   });
 });
 
+describe("signing out the CLI login", () => {
+  it("signs the CLI out, keeps the entry and moves its agents", async () => {
+    const { service, store, reopened } = await setUp(
+      {
+        accounts: [account(MAIN, "marketing", "main"), account(HELLO, "hello", "managed")] as never,
+        defaults: { claude: HELLO, codex: null },
+        sessions: { [AGENT]: { accountId: MAIN, family: "claude", openedAt: new Date().toISOString() } },
+      },
+      () => ({ kind: "window", resetsAt: inFuture(), message: "" }),
+    );
+    const internal = service as unknown as { adapters: Record<string, FamilyAdapter> };
+    const homes: Array<string | null> = [];
+    internal.adapters.claude = { ...internal.adapters.claude, logout: async (home: string | null) => void homes.push(home) } as FamilyAdapter;
+    const paseo = fakePaseo().paseo as never;
+
+    expect(await service.remove(paseo, MAIN)).toBe(1);
+    expect(homes).toEqual([null]);
+    const state = await store.read();
+    expect(state.accounts.find((entry) => entry.id === MAIN)?.signedIn).toBe(false);
+    expect(state.sessions[AGENT]?.accountId).toBe(HELLO);
+    expect(reopened).toEqual([AGENT]);
+  });
+});
+
 describe("disabling an account", () => {
   it("moves its agents off and back, and won't disable the last usable account", async () => {
     const { service, store, reopened } = await setUp(

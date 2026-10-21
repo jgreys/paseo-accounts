@@ -224,13 +224,14 @@ function AccountDetail({
       await store.rpc(clearAccountLimit, { accountId: account.id });
       return `${account.label} is available again`;
     });
+  // Only these CLIs can sign their own login out; the others keep it in a store they manage.
+  const canSignOutCli = account.family === "claude" || account.family === "codex";
   const remove = () =>
     run("remove", async () => {
       const result = await store.rpc(removeAccount, { accountId: account.id });
       setConfirmRemove(false);
-      return result.movedAgents > 0
-        ? `Removed ${account.label}; ${result.movedAgents} agent(s) moved`
-        : `Removed ${account.label}`;
+      const done = account.kind === "main" ? `Signed out ${account.label}` : `Removed ${account.label}`;
+      return result.movedAgents > 0 ? `${done}; ${result.movedAgents} agent(s) moved` : done;
     });
 
   return (
@@ -354,13 +355,13 @@ function AccountDetail({
           onPress={() => void toggle()}
         />
         <Button theme={theme} size="small" icon="Pencil" label="Rename" onPress={() => setRenaming(true)} />
-        {account.kind !== "main" ? (
+        {account.kind !== "main" || (canSignOutCli && !signedOut) ? (
           <Button
             theme={theme}
             size="small"
             tone="danger"
-            icon="Trash2"
-            label="Remove"
+            icon={account.kind === "main" ? "LogOut" : "Trash2"}
+            label={account.kind === "main" ? "Sign out" : "Remove"}
             busy={busy === "remove"}
             onPress={() => setConfirmRemove(true)}
           />
@@ -387,10 +388,12 @@ function AccountDetail({
       {editingFolders ? (
         <FoldersModal theme={theme} account={account} store={store} onClose={() => setEditingFolders(false)} />
       ) : null}
-      <Modal title={`Remove ${account.label}?`} open={confirmRemove} onOpenChange={setConfirmRemove}>
+      <Modal title={`${account.kind === "main" ? "Sign out" : "Remove"} ${account.label}?`} open={confirmRemove} onOpenChange={setConfirmRemove}>
         <Modal.Content>
           <Text style={text.body}>
-            {account.family !== "codex"
+            {account.kind === "main"
+              ? `This signs the ${account.family === "codex" ? "codex" : "claude"} CLI login out on this machine, for the terminal too. Agents using it move to your other accounts. Sign it in again from here at any time, with this account or another one.`
+              : account.family !== "codex"
               ? "This signs the account out on this machine and deletes its saved login. Agents using it move to the default account; their conversations are kept."
               : "This signs the account out on this machine and deletes its saved login. New agents use the default account. Existing ChatGPT conversations on it can't move, so start new agents for them."}
           </Text>
@@ -399,8 +402,8 @@ function AccountDetail({
             <Button
               theme={theme}
               tone="danger"
-              icon="Trash2"
-              label="Remove"
+              icon={account.kind === "main" ? "LogOut" : "Trash2"}
+              label={account.kind === "main" ? "Sign out" : "Remove"}
               busy={busy === "remove"}
               onPress={() => void remove()}
             />

@@ -99,7 +99,8 @@ export interface FamilyAdapter {
    */
   redeemReset(home: string | null, options?: { onlyAtLimit?: boolean }): Promise<RedeemReply>;
   login(home: string | null, method: LoginMethod): Promise<LoginHandle>;
-  logout(home: string): Promise<void>;
+  /** `null` signs out the CLI login (the CLI's own config folder). */
+  logout(home: string | null): Promise<void>;
   /** Looks for a subscription usage-limit failure in a finished turn. */
   detectLimit(event: TurnEvent): LimitHit | null;
   /** Looks for a turn that failed because the account's login is no longer valid. */
