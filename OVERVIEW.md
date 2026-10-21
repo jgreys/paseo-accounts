@@ -31,7 +31,8 @@ Run Claude Code, Codex and other agents on several of your own subscriptions at 
 
 ## What it sends, and when
 
-- **Switching accounts** within a provider sends nothing new: the agent reopens on the other account with its own history. A short follow-up ("continue") is sent so the interrupted task carries on; you can turn that off.
+- **Switching accounts** within a provider sends nothing new for Claude and the other providers whose sessions can move: the agent reopens its existing session on the other account. A short follow-up ("continue") is sent so the interrupted task carries on; you can turn that off.
+- **ChatGPT (Codex) conversations** can't move, because Codex encrypts them per account. The original thread stays on its account, and a new agent starts on the other account in the same workspace with a transcript of the conversation so far.
 - **Fork to another provider** is off by default. When on (or when you pick it from an agent's account button), the new agent receives the conversation so far and a summary of recent tool activity. It never gets more permissions than the original agent.
 - **Banked resets** are spent only after you confirm, or automatically if you turn that on (off by default).
 - **Alerts** are off until you enter an ntfy topic or webhook URL. They send a short plain-text message, which can include an account's name, when every account of a provider is out, an account is signed out, or an agent didn't come back after a switch.
