@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1 - 2026-10-21
+
+- The Accounts badge only counts accounts the Accounts screen lists, and the sidebar label stays "Accounts".
+
 ## 1.1.0 - 2026-10-21
 
 - The sidebar's Accounts item shows a badge with the number of signed-out accounts (Paseo 0.12 and later).

@@ -2,7 +2,7 @@ import type { PluginRpcContract } from "@getpaseo/plugin";
 import type { PluginClientContext } from "@getpaseo/plugin/client";
 import type { ZodType, input as ZodInput, output as ZodOutput } from "zod";
 import { useSyncExternalStore } from "react";
-import type { StateView } from "../shared/model";
+import { FAMILIES, type Family, type StateView } from "../shared/model";
 import { getState } from "../shared/rpc";
 
 const IDLE_POLL_MS = 20_000;
@@ -143,4 +143,18 @@ export function describe(error: unknown): string {
 
 export function useStore(store: AccountsStore): StoreSnapshot {
   return useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
+}
+
+/**
+ * The providers the Accounts screen shows: a provider shows once it's in use (it runs agents, or has
+ * an account you added). The rest are one tap away in Add account, so they don't cost a section each.
+ * Before anything is in use (a fresh install), it shows the logins that work.
+ */
+export function shownFamilies(state: StateView | null): Family[] {
+  const inUse = FAMILIES.filter(
+    (family) =>
+      state?.agents.some((agent) => agent.family === family && agent.status !== "closed") ||
+      state?.accounts.some((account) => account.family === family && account.kind !== "main"),
+  );
+  return inUse.length > 0 ? inUse : FAMILIES.filter((family) => state?.accounts.some((a) => a.family === family && a.status === "ready"));
 }

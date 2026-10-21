@@ -3,7 +3,7 @@ import { Icon, Modal } from "@getpaseo/plugin/client/react-native";
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { zoneNote } from "../shared/format";
-import { FAMILIES, FAMILY_HEADING, type AccountView, type Family } from "../shared/model";
+import { FAMILY_HEADING, type AccountView, type Family } from "../shared/model";
 import { AccountRow, SectionLabel } from "./account-row";
 import { ActivityTab } from "./activity-tab";
 import { AddAccountModal } from "./add-account";
@@ -11,7 +11,7 @@ import { AgentsTab } from "./agents-tab";
 import { CapacityStrip } from "./capacity";
 import { ProjectsTab } from "./projects-tab";
 import { PreferenceSections } from "./settings-screen";
-import { useStore, VISIBLE_POLL_MS, type AccountsStore } from "./store";
+import { shownFamilies, useStore, VISIBLE_POLL_MS, type AccountsStore } from "./store";
 import { Button, Card, IconButton, Tabs, useText } from "./ui";
 
 type Theme = PluginSurfaceProps["theme"];
@@ -43,15 +43,7 @@ export function AccountsSurface(props: PluginSurfaceProps & { store: AccountsSto
   // Keep usage moving while the screen is open.
   useEffect(() => store.watch(VISIBLE_POLL_MS), [store]);
 
-  // A provider shows once it's in use: it runs agents, or has an account you added. The rest are
-  // one tap away in Add account, so they don't cost a section each.
-  const inUse = FAMILIES.filter(
-    (family) =>
-      state?.agents.some((agent) => agent.family === family && agent.status !== "closed") ||
-      state?.accounts.some((account) => account.family === family && account.kind !== "main"),
-  );
-  // Before anything is in use (a fresh install), show the logins that work.
-  const families = inUse.length > 0 ? inUse : FAMILIES.filter((family) => state?.accounts.some((a) => a.family === family && a.status === "ready"));
+  const families = shownFamilies(state);
   const openAgent = navigation ? (agentId: string) => navigation.openAgent({ agentId, serverId: host.id }) : undefined;
   const liveAgents = state?.agents.filter((agent) => agent.status !== "closed") ?? [];
   const folderCount = state?.accounts.reduce((sum, account) => sum + account.folders.length, 0) ?? 0;
