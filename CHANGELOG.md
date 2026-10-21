@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0 - 2026-10-21
+
+- The sidebar's Accounts item shows a badge with the number of signed-out accounts (Paseo 0.12 and later).
+
 ## 1.0.1 - 2026-10-20
 
 - Expanded the overview: required CLIs, first-account setup, what the plugin accesses and what it sends.
