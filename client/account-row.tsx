@@ -8,6 +8,7 @@ import {
   clearAccountLimit,
   removeAccount,
   renameAccount,
+  signOutAccount,
   setAccountEnabled,
   setAccountFolders,
   setAccountPriority,
@@ -19,7 +20,7 @@ import { describe, type AccountsStore } from "./store";
 import { Badge, Button, Dot, Meter, Tabs, toneColor, UsageBar, useText } from "./ui";
 
 type Theme = PluginSurfaceProps["theme"];
-type Busy = "default" | "remove" | "clear" | "toggle" | null;
+type Busy = "default" | "remove" | "signout" | "clear" | "toggle" | null;
 
 /**
  * One account as a compact row: who it is, how much is used and when it refills. Opening it
@@ -186,6 +187,7 @@ function AccountDetail({
   const [renaming, setRenaming] = useState(false);
   const [editingFolders, setEditingFolders] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const resets = account.usage?.resets ?? null;
   const windows = account.usage?.windows ?? [];
@@ -224,14 +226,20 @@ function AccountDetail({
       await store.rpc(clearAccountLimit, { accountId: account.id });
       return `${account.label} is available again`;
     });
-  // Only these CLIs can sign their own login out; the others keep it in a store they manage.
-  const canSignOutCli = account.family === "claude" || account.family === "codex";
+  // Only these CLIs can sign an account out on its own; the others' sign-in goes with the account.
+  const canSignOut = (account.family === "claude" || account.family === "codex") && !signedOut;
+  const moved = (done: string, count: number) => (count > 0 ? `${done}; ${count} agent(s) moved` : done);
   const remove = () =>
     run("remove", async () => {
       const result = await store.rpc(removeAccount, { accountId: account.id });
       setConfirmRemove(false);
-      const done = account.kind === "main" ? `Signed out ${account.label}` : `Removed ${account.label}`;
-      return result.movedAgents > 0 ? `${done}; ${result.movedAgents} agent(s) moved` : done;
+      return moved(`Removed ${account.label}`, result.movedAgents);
+    });
+  const signOut = () =>
+    run("signout", async () => {
+      const result = await store.rpc(signOutAccount, { accountId: account.id });
+      setConfirmSignOut(false);
+      return moved(`Signed out ${account.label}`, result.movedAgents);
     });
 
   return (
@@ -355,13 +363,16 @@ function AccountDetail({
           onPress={() => void toggle()}
         />
         <Button theme={theme} size="small" icon="Pencil" label="Rename" onPress={() => setRenaming(true)} />
-        {account.kind !== "main" || (canSignOutCli && !signedOut) ? (
+        {canSignOut ? (
+          <Button theme={theme} size="small" icon="LogOut" label="Sign out" busy={busy === "signout"} onPress={() => setConfirmSignOut(true)} />
+        ) : null}
+        {account.kind !== "main" ? (
           <Button
             theme={theme}
             size="small"
             tone="danger"
-            icon={account.kind === "main" ? "LogOut" : "Trash2"}
-            label={account.kind === "main" ? "Sign out" : "Remove"}
+            icon="Trash2"
+            label="Remove"
             busy={busy === "remove"}
             onPress={() => setConfirmRemove(true)}
           />
@@ -388,12 +399,23 @@ function AccountDetail({
       {editingFolders ? (
         <FoldersModal theme={theme} account={account} store={store} onClose={() => setEditingFolders(false)} />
       ) : null}
-      <Modal title={`${account.kind === "main" ? "Sign out" : "Remove"} ${account.label}?`} open={confirmRemove} onOpenChange={setConfirmRemove}>
+      <Modal title={`Sign out ${account.label}?`} open={confirmSignOut} onOpenChange={setConfirmSignOut}>
         <Modal.Content>
           <Text style={text.body}>
             {account.kind === "main"
               ? `This signs the ${account.family === "codex" ? "codex" : "claude"} CLI login out on this machine, for the terminal too. Agents using it move to your other accounts. Sign it in again from here at any time, with this account or another one.`
-              : account.family !== "codex"
+              : "This signs the account out on this machine but keeps it in the list, with its settings and project folders. Agents using it move to your other accounts. Sign it in again from here at any time."}
+          </Text>
+          <View style={{ flexDirection: "row", gap: 8, justifyContent: "flex-end" }}>
+            <Button theme={theme} label="Cancel" onPress={() => setConfirmSignOut(false)} />
+            <Button theme={theme} tone="danger" icon="LogOut" label="Sign out" busy={busy === "signout"} onPress={() => void signOut()} />
+          </View>
+        </Modal.Content>
+      </Modal>
+      <Modal title={`Remove ${account.label}?`} open={confirmRemove} onOpenChange={setConfirmRemove}>
+        <Modal.Content>
+          <Text style={text.body}>
+            {account.family !== "codex"
               ? "This signs the account out on this machine and deletes its saved login. Agents using it move to the default account; their conversations are kept."
               : "This signs the account out on this machine and deletes its saved login. New agents use the default account. Existing ChatGPT conversations on it can't move, so start new agents for them."}
           </Text>
@@ -402,8 +424,8 @@ function AccountDetail({
             <Button
               theme={theme}
               tone="danger"
-              icon={account.kind === "main" ? "LogOut" : "Trash2"}
-              label={account.kind === "main" ? "Sign out" : "Remove"}
+              icon="Trash2"
+              label="Remove"
               busy={busy === "remove"}
               onPress={() => void remove()}
             />

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.4 - 2026-10-21
+
+- Every Claude and ChatGPT account can be signed out (**Sign out**) without removing it; **Sign in** brings it back. Added accounts can still be removed.
+
 ## 1.0.3 - 2026-10-21
 
 - The Claude and ChatGPT CLI logins can be signed out from their account card (**Sign out**), then signed in again with the same or another account.

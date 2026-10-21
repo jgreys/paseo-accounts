@@ -43,6 +43,13 @@ export const removeAccount = defineRpc({
   output: z.object({ ok: z.literal(true), movedAgents: z.number() }),
 });
 
+/** Signs an account out but keeps it listed, so it can be signed in again. */
+export const signOutAccount = defineRpc({
+  name: "paseo-accounts.accounts.signout",
+  input: z.object({ accountId: z.string() }),
+  output: z.object({ ok: z.literal(true), movedAgents: z.number() }),
+});
+
 export const ReopenSummarySchema = z.object({
   reopened: z.array(z.string()),
   /** Busy agents move when their current turn ends. */

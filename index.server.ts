@@ -15,6 +15,7 @@ import {
   getState,
   redeemReset,
   removeAccount,
+  signOutAccount,
   renameAccount,
   setAgentAccount,
   setDefaultAccount,
@@ -92,6 +93,10 @@ export default function contribute(server: PluginServerContext) {
   server.handle(removeAccount, async ({ accountId }, { paseo }) => ({
     ok: true as const,
     movedAgents: await service.remove(paseo, accountId),
+  }));
+  server.handle(signOutAccount, async ({ accountId }, { paseo }) => ({
+    ok: true as const,
+    movedAgents: await service.signOut(paseo, accountId),
   }));
   server.handle(setDefaultAccount, ({ accountId }, { paseo }) => service.setDefault(paseo, accountId));
   server.handle(clearAccountLimit, async ({ accountId }) => {

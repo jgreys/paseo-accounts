@@ -394,6 +394,29 @@ describe("signing out the CLI login", () => {
     expect(state.sessions[AGENT]?.accountId).toBe(HELLO);
     expect(reopened).toEqual([AGENT]);
   });
+
+  it("signs an added account out without removing it", async () => {
+    const { service, store, reopened } = await setUp(
+      {
+        accounts: [account(MAIN, "marketing", "main"), account(HELLO, "hello", "managed")] as never,
+        defaults: { claude: MAIN, codex: null },
+        sessions: { [AGENT]: { accountId: HELLO, family: "claude", openedAt: new Date().toISOString() } },
+      },
+      () => ({ kind: "window", resetsAt: inFuture(), message: "" }),
+    );
+    const internal = service as unknown as { adapters: Record<string, FamilyAdapter> };
+    const homes: Array<string | null> = [];
+    internal.adapters.claude = { ...internal.adapters.claude, logout: async (home: string | null) => void homes.push(home) } as FamilyAdapter;
+    const paseo = fakePaseo().paseo as never;
+    const home = (await store.read()).accounts.find((entry) => entry.id === HELLO)?.home ?? null;
+
+    expect(await service.signOut(paseo, HELLO)).toBe(1);
+    expect(homes).toEqual([home]);
+    const state = await store.read();
+    expect(state.accounts.find((entry) => entry.id === HELLO)).toMatchObject({ signedIn: false });
+    expect(state.sessions[AGENT]?.accountId).toBe(MAIN);
+    expect(reopened).toEqual([AGENT]);
+  });
 });
 
 describe("disabling an account", () => {
