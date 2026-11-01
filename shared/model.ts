@@ -69,6 +69,20 @@ export const ResetOfferSchema = z.object({
 });
 export type ResetOffer = z.infer<typeof ResetOfferSchema>;
 
+/** Claude's paid extra usage: once the plan's limits are used up, Claude keeps answering from this monthly budget. */
+export const ExtraUsageSchema = z.object({
+  /** Amounts in minor units of `currency` (cents for USD). */
+  usedMinor: z.number(),
+  limitMinor: z.number(),
+  currency: z.string(),
+  exponent: z.number(),
+});
+export type ExtraUsage = z.infer<typeof ExtraUsageSchema>;
+
+export function extraLeft(extra: ExtraUsage | null | undefined): boolean {
+  return !!extra && extra.usedMinor < extra.limitMinor;
+}
+
 export const UsageSchema = z.object({
   fetchedAt: z.string(),
   windows: z.array(UsageWindowSchema),
@@ -78,6 +92,8 @@ export const UsageSchema = z.object({
   cached: z.boolean().default(false),
   /** Banked resets, when the provider reports any. */
   resets: ResetOfferSchema.nullable().default(null),
+  /** Claude's paid extra usage, when it is turned on with a monthly limit. */
+  extra: ExtraUsageSchema.nullish(),
 });
 export type Usage = z.infer<typeof UsageSchema>;
 

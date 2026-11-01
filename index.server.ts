@@ -1,4 +1,5 @@
 import type { PluginServerContext, PluginSettingsState } from "@getpaseo/plugin/server";
+import { z } from "zod";
 import { sendAlert } from "./server/alerts";
 import { ClaudeAdapter } from "./server/claude";
 import { CodexAdapter } from "./server/codex";
@@ -82,6 +83,18 @@ export default function contribute(server: PluginServerContext) {
   server.on("agent.archived", (event) => {
     void service.onAgentArchived(event.agent.id).catch(() => undefined);
   });
+
+  // Paseo 0.12+ lists our accounts in its own Usage view; older daemons don't have usage sources.
+  if (typeof server.registerUsageSource === "function") {
+    const input = z.object({ accountId: z.string() });
+    server.registerUsageSource({
+      id: "paseo-accounts",
+      label: "Paseo Accounts",
+      input,
+      discover: (scope) => service.usageAccounts(scope),
+      fetch: (raw) => service.usageReportFor(input.parse(raw).accountId),
+    });
+  }
 
   server.handle(getState, ({ refreshUsage }, { paseo }) => service.view(paseo, refreshUsage));
   server.handle(startLogin, ({ family, method, accountId }) => service.startLogin(family, method, accountId));

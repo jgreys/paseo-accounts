@@ -1,5 +1,5 @@
 {
-  "name": "paseo-accounts",
+  "name": "@jgreys/paseo-accounts",
   "version": "1.1.0",
   "description": "Use several Claude, ChatGPT and other AI subscriptions side by side in Paseo, and switch automatically when one hits its limit.",
   "keywords": [
@@ -38,6 +38,8 @@
     "README.md",
     "OVERVIEW.md",
     "CHANGELOG.md",
+    "SECURITY.md",
+    "TESTING.md",
     "images/",
     "LICENSE"
   ],

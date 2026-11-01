@@ -21,6 +21,7 @@ const values = {
   autoContinue: true,
   balanceNewAgents: true,
   autoRedeem: false,
+  spendExtraUsage: false,
   forkOtherProvider: false,
   showComposerPill: true,
   continuePrompt: "",

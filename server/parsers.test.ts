@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AgentTimelineItem } from "./adapter";
-import { parseUsage } from "./claude";
+import { parseExtraUsage, parseUsage } from "./claude";
 import { parseRateLimits } from "./codex";
 import { buildTranscript, continuationPrompt } from "./handoff";
 
@@ -17,6 +17,17 @@ describe("Claude usage", () => {
       { id: "seven_day", label: "Weekly", usedPercent: 74, resetsAt: "2026-09-25T10:00:00.599Z" },
       { id: "weekly_fable", label: "Weekly · Fable", usedPercent: 21, resetsAt: "2026-09-25T10:00:00.000Z" },
     ]);
+  });
+
+  it("reads the paid extra-usage budget only when it is turned on with a limit", () => {
+    expect(parseExtraUsage({ is_enabled: true, monthly_limit: 5000, used_credits: 1240, currency: "USD", decimal_places: 2 })).toEqual({
+      usedMinor: 1240,
+      limitMinor: 5000,
+      currency: "USD",
+      exponent: 2,
+    });
+    expect(parseExtraUsage({ is_enabled: false, monthly_limit: null })).toBeNull();
+    expect(parseExtraUsage(null)).toBeNull();
   });
 
   it("tolerates missing or malformed data", () => {

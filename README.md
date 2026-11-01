@@ -1,5 +1,7 @@
 # Paseo Accounts
 
+[![CI](https://github.com/jgreys/paseo-accounts/actions/workflows/ci.yml/badge.svg)](https://github.com/jgreys/paseo-accounts/actions/workflows/ci.yml) [![npm](https://img.shields.io/npm/v/@jgreys/paseo-accounts)](https://www.npmjs.com/package/@jgreys/paseo-accounts)
+
 Use several Claude, ChatGPT (Codex), GitHub Copilot, Kimi Code, OpenCode Go, Pi and Oh My Pi subscriptions side by side in [Paseo](https://paseo.sh), without logging in and out of the CLI.
 
 ![Paseo Accounts](images/accounts-dark.png)
@@ -11,6 +13,9 @@ Use several Claude, ChatGPT (Codex), GitHub Copilot, Kimi Code, OpenCode Go, Pi 
 - **Automatic failover.** When an account hits its 5-hour or weekly limit, the agent moves to the account with the most room left and carries on. New agents skip exhausted accounts.
 - **Ultra plans.** Claude Max 20x accounts show as Ultra. Verified Ultra accounts have no 5-hour limit in Claude Code, so they only show weekly limits.
 - **Live usage.** Each account shows its own 5-hour and weekly usage and when they reset. Accounts in use refresh about every minute and after each turn, and a limit shows up the moment it hits.
+- **In Paseo's Usage view.** On Paseo 0.12 and later, every account shows up in Paseo's own Usage view and `paseo usage`, next to Paseo's built-in sources.
+- **Start an agent on a named account.** `paseo run --env PASEO_ACCOUNT=Work "…"` from scripts and schedules. The name matches any case; use the account id if two share a name.
+- **Claude extra usage.** An account with paid extra usage shows its budget left. Optionally, agents use it once every other account is full, instead of stopping.
 - **Banked resets.** If a provider has banked limit resets on an account, you can use one from the account card or the agent's account button.
 - **Signed-out accounts stand out.** On Paseo 0.12 and later, the sidebar's **Accounts** item shows how many accounts need signing in again.
 - **Set an account aside.** Disable an account for a while and its agents move to your other accounts, then come back when you enable it again.
@@ -31,6 +36,12 @@ Install it from the Paseo plugin directory (or **Paseo Cafe**):
 
 ```bash
 paseo plugin add jgreys/accounts
+```
+
+npm gets new versions before the directory has reviewed them:
+
+```bash
+paseo plugin install npm:@jgreys/paseo-accounts
 ```
 
 To run it from a checkout instead:
@@ -187,15 +198,18 @@ paseo-accounts never implements OAuth itself and never copies credentials betwee
 - An account that still has ChatGPT conversations on it can't be removed until you archive them or continue them elsewhere, because they can't move.
 - **Sign out** (Claude and ChatGPT) signs an account out but keeps it listed with its settings and project folders; its agents move to your other accounts, and **Sign in** brings the same or another account back. For your CLI login this signs the CLI out on that machine, for the terminal too (`claude auth logout` / Codex logout). Your CLI login can't be removed, only signed out; other providers' CLI logins are signed out with their own CLI.
 
+Security reports: see [SECURITY.md](SECURITY.md).
+
 ## Limitations
 
 - **MCP servers that use OAuth** (Linear, Notion, …) store their tokens per Claude account, so sign in to them once on each account.
 - **Shared settings apply to every account.** If `~/.claude/settings.json` sets an `apiKeyHelper` or API-key `env`, every account uses that key instead of its subscription.
+- **Paseo's Usage view can show a Claude account twice**: once from Paseo's own Claude source (when an agent on that account opened its usage details) and once as *Paseo Accounts*. Both show the same account; Paseo keeps sources apart.
 - **Usage for an idle Claude account** shows the last reading until the account is used again or you refresh usage. Anthropic rate-limits its usage endpoint (Claude Code and Paseo read it too), so a reading can be a few minutes old; the card then says when it was taken. Readings are saved in `$PASEO_HOME/paseo-accounts/usage.json`, so they survive restarts.
 - **Password-protected daemons:** `paseo agent reload` can't authenticate. Agents then switch the next time their session starts, not immediately, and their timeline note says so.
 - **Imported Codex threads** (`paseo agent import`) are assigned to your CLI login, since that's where standalone Codex sessions come from.
 - **ChatGPT device-code sign-in** has to be enabled in ChatGPT → Settings → Security. The browser option works from a browser on the host's own computer.
-- Tested on macOS with Claude Code 2.1.280, Codex 0.156.1 and Paseo 0.9.1. Linux should work. Windows is untested.
+- What was tested on real accounts, and what only by automated tests, is in [TESTING.md](TESTING.md). Linux should work. Windows is untested.
 
 ## Development
 

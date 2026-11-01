@@ -1,4 +1,4 @@
-import type { AccountView, UsageWindow } from "./model";
+import type { AccountView, ExtraUsage, UsageWindow } from "./model";
 
 /** "in 2h 14m", "in 3d 4h", "now". */
 export function formatResetIn(resetsAt: string | null, now: number = Date.now()): string | null {
@@ -150,4 +150,17 @@ export function formatWhen(at: string | null, now: number = Date.now()): string 
 /** " (Seoul time)" when the viewer's clock differs from the host's, so a time says whose it is. */
 export function zoneNote(host: { name: string; offsetMinutes: number }, now: number = Date.now()): string {
   return -new Date(now).getTimezoneOffset() === host.offsetMinutes ? "" : ` (${host.name} time)`;
+}
+
+/** "$12.40 of $50.00 left" for Claude's paid extra usage. */
+export function formatExtra(extra: ExtraUsage): string {
+  const money = (minor: number) => {
+    const value = minor / 10 ** extra.exponent;
+    try {
+      return value.toLocaleString("en-US", { style: "currency", currency: extra.currency });
+    } catch {
+      return `${value.toFixed(extra.exponent)} ${extra.currency}`;
+    }
+  };
+  return `${money(Math.max(0, extra.limitMinor - extra.usedMinor))} of ${money(extra.limitMinor)} left`;
 }

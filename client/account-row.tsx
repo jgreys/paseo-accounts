@@ -2,7 +2,7 @@ import type { PluginSurfaceProps } from "@getpaseo/plugin/client";
 import { Icon, Modal, TextInput, useToast } from "@getpaseo/plugin/client/react-native";
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { accountSubtitle, folderName, formatAge, formatPlan, formatWhen, nextRefill, roomLeft, roomTone } from "../shared/format";
+import { accountSubtitle, folderName, formatAge, formatExtra, formatPlan, formatWhen, nextRefill, roomLeft, roomTone } from "../shared/format";
 import type { AccountView, AgentRoute } from "../shared/model";
 import {
   clearAccountLimit,
@@ -251,6 +251,9 @@ function AccountDetail({
           {windows.map((limit) => (
             <UsageBar key={limit.id} theme={theme} limit={limit} />
           ))}
+          {account.usage?.extra ? (
+            <Text style={text.small}>Extra usage · {formatExtra(account.usage.extra)}</Text>
+          ) : null}
           {account.usage ? (
             <Text style={[text.small, { fontSize: 11 }]}>
               Updated {formatAge(account.usage.fetchedAt)}

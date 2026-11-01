@@ -31,6 +31,11 @@ export const preferences = defineSettings({
      * other provider (Claude ↔ ChatGPT), in a mode no more permissive than the original's.
      */
     forkOtherProvider: z.boolean().default(false),
+    /**
+     * A Claude account with paid extra usage keeps answering past its plan's limits. Off, it counts as
+     * full like any other; on, it stays usable after the other accounts, until its budget runs out.
+     */
+    spendExtraUsage: z.boolean().default(false),
     /** Show the account pill in the composer of Claude and Codex agents. */
     showComposerPill: z.boolean().default(true),
     /**

@@ -1052,3 +1052,65 @@ describe("changing the default account", () => {
     expect(reopened).toEqual([]);
   });
 });
+
+describe("account named at creation", () => {
+  it("starts the agent on the account named by PASEO_ACCOUNT, case-insensitively, and keeps the name from the CLI", async () => {
+    const { service, store } = await setUp(
+      { accounts: [account(MAIN, "marketing", "main"), account(HELLO, "Hello", "managed")] as never, defaults: { claude: MAIN, codex: null } },
+      () => null as never,
+    );
+    const context = { paseo: fakePaseo().paseo } as never;
+    const opened = await service.onSessionOpen(
+      { agentId: "named", provider: "claude", cwd: "/tmp", reason: "create", purpose: "interactive", env: { PASEO_ACCOUNT: "hello", KEEP: "1" } } as never,
+      context,
+    );
+    expect(opened?.env).toEqual({ KEEP: "1", CLAUDE_CONFIG_DIR: join(tmpdir(), HELLO) });
+    expect((await store.read()).bindings.named).toMatchObject({ accountId: HELLO, source: "user" });
+  });
+
+  it("routes as usual when no account has that name", async () => {
+    const { service, store } = await setUp(
+      { accounts: [account(MAIN, "marketing", "main"), account(HELLO, "Hello", "managed")] as never, defaults: { claude: MAIN, codex: null } },
+      () => null as never,
+    );
+    const context = { paseo: fakePaseo().paseo } as never;
+    const opened = await service.onSessionOpen(
+      { agentId: "typo", provider: "claude", cwd: "/tmp", reason: "create", purpose: "interactive", env: { PASEO_ACCOUNT: "helo" } } as never,
+      context,
+    );
+    expect(opened?.env).toEqual({});
+    expect((await store.read()).sessions.typo?.accountId).toBe(MAIN);
+  });
+});
+
+describe("paid extra usage", () => {
+  const full = (extra: boolean) => async (): Promise<UsageRead> => ({
+    fetchedAt: new Date().toISOString(),
+    windows: [{ id: "seven_day", label: "Weekly", usedPercent: 100, resetsAt: inFuture() }],
+    error: null,
+    cached: false,
+    resets: null,
+    extra: extra ? { usedMinor: 100, limitMinor: 5000, currency: "USD", exponent: 2 } : null,
+  });
+  const refresh = (service: Service) =>
+    (service as unknown as { refreshUsage(id: string, force: boolean): Promise<void> }).refreshUsage(HELLO, true);
+  const setUpFull = async (extra: boolean, spend: boolean) => {
+    const set = await setUp({ accounts: [account(MAIN, "marketing", "main"), account(HELLO, "Hello", "managed")] as never }, () => null as never);
+    (set.service as unknown as { adapters: Record<string, FamilyAdapter> }).adapters.claude!.usage = full(extra);
+    set.service.setPreferences(preferences.schema.parse({ spendExtraUsage: spend }));
+    await refresh(set.service);
+    return (await set.store.read()).accounts.find((candidate) => candidate.id === HELLO)!;
+  };
+
+  it("counts a full account as full when spending extra usage is off", async () => {
+    expect((await setUpFull(true, false)).limitedUntil).not.toBeNull();
+  });
+
+  it("keeps a full account with budget left usable when spending extra usage is on", async () => {
+    expect((await setUpFull(true, true)).limitedUntil).toBeNull();
+  });
+
+  it("still counts it full when it has no extra usage", async () => {
+    expect((await setUpFull(false, true)).limitedUntil).not.toBeNull();
+  });
+});

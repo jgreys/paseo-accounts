@@ -5,6 +5,10 @@
 - **Select** in the Agents tab moves several agents to another account at once. Agents that can't move are listed with the reason.
 - Claude Max 20x accounts show as **Ultra**, Anthropic's new name for the plan. Verified Ultra accounts have no 5-hour limit in Claude Code, so only their weekly limits show.
 - The Accounts screen refreshes when you open it, switch host or tab, and when the app comes back to the foreground.
+- Your accounts show up in Paseo's own Usage view (Paseo 0.12 and later), from the last reading, so opening it costs no provider request. Agents of Kimi Code and the other providers show the account they really run on.
+- `paseo run --env PASEO_ACCOUNT=Work …` starts an agent on a named account (name or id, any case). An unknown name is logged and the agent is routed as usual.
+- Claude's paid extra usage shows on the account card ("Extra usage · $38.00 of $50.00 left"). A new setting, **Use Claude's paid extra usage when every account is out** (off by default), keeps such an account usable after the others are full, until its budget runs out.
+- Tests run on every push (GitHub Actions). Added `SECURITY.md` and `TESTING.md`, which says what was tested on real accounts and what wasn't. The npm package is `@jgreys/paseo-accounts`.
 
 ## 1.0.4 - 2026-10-21
 

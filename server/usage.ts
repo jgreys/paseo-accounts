@@ -44,7 +44,8 @@ export function mergeUsage(previous: Usage | undefined, next: Usage): Usage {
   if (!previous || previous.windows.length === 0) return next;
   if (next.windows.length === 0) return { ...previous, error: next.error };
   if (next.cached && Date.parse(next.fetchedAt) <= Date.parse(previous.fetchedAt)) return previous;
-  return next;
+  // Claude's own cached copy has no extra-usage budget; keep the last one we read.
+  return next.cached && !next.extra && previous.extra ? { ...next, extra: previous.extra } : next;
 }
 
 function usagePath(): string {

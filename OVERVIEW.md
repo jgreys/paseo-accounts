@@ -7,6 +7,9 @@ Run Claude Code, Codex and other agents on several of your own subscriptions at 
 - **Switch before the limit.** Agents move off a nearly full account between turns, so long tasks don't get cut in the middle.
 - **Live usage and forecasts.** See every account's 5-hour, weekly and monthly usage, when it resets, and when it will run out at the current pace.
 - **One account per agent or per project.** Pick an account from the composer, or dedicate an account to a folder.
+- **In Paseo's Usage view.** Every account appears in Paseo's own Usage view and `paseo usage` (Paseo 0.12+).
+- **Named accounts for scripts.** `paseo run --env PASEO_ACCOUNT=Work …` starts an agent on that account.
+- **Claude extra usage.** See the paid budget left, and optionally use it once every other account is full.
 - **Seven providers.** Claude, ChatGPT (Codex), GitHub Copilot, Kimi Code, OpenCode Go, Pi and Oh My Pi.
 - **Fork to another provider (optional).** When every account of a provider is out, the chat can carry on with another provider, with the conversation so far.
 - **Alerts (optional).** Get an ntfy or webhook message when accounts run out or need attention.
@@ -25,7 +28,7 @@ Run Claude Code, Codex and other agents on several of your own subscriptions at 
 ## What it accesses
 
 - **Sign-ins stay where the CLIs keep them.** Each added account gets its own CLI config folder under `$PASEO_HOME/paseo-accounts/homes/`, and its login lives in that CLI's usual store (the macOS keychain or the CLI's own credentials file). Your settings, skills, MCP servers and conversation history are shared with your main login through links.
-- **Usage readings.** To show usage, the plugin reads each account's sign-in and asks that provider only: Claude through Anthropic's usage endpoint, Kimi through its usage API, Codex through the installed Codex CLI. Tokens are never logged, stored elsewhere or sent anywhere else.
+- **Usage readings.** To show usage, the plugin reads each account's sign-in and asks that provider only: Claude through Anthropic's usage endpoint (which also reports the paid extra-usage budget), Kimi through its usage API, Codex through the installed Codex CLI. Tokens are never logged, stored elsewhere or sent anywhere else. Paseo's Usage view gets the plugin's last reading, with no new request.
 - **Local files.** The plugin keeps a small registry (account names, emails, plans and which agent uses which account), 8 days of usage readings and a switch log in `$PASEO_HOME/paseo-accounts/`.
 - **Removing an account** signs it out with the provider's CLI and deletes its folder, after you confirm. Shared files are unlinked first and never deleted.
 
@@ -34,5 +37,6 @@ Run Claude Code, Codex and other agents on several of your own subscriptions at 
 - **Switching accounts** within a provider sends nothing new for Claude and the other providers whose sessions can move: the agent reopens its existing session on the other account. A short follow-up ("continue") is sent so the interrupted task carries on; you can turn that off.
 - **ChatGPT (Codex) conversations** can't move, because Codex encrypts them per account. The original thread stays on its account, and a new agent starts on the other account in the same workspace with a transcript of the conversation so far.
 - **Fork to another provider** is off by default. When on (or when you pick it from an agent's account button), the new agent receives the conversation so far and a summary of recent tool activity. It never gets more permissions than the original agent.
+- **Paid extra usage** is never chosen by the plugin unless you turn on **Use Claude's paid extra usage when every account is out** (off by default). It only matters for accounts where you enabled extra usage at claude.ai.
 - **Banked resets** are spent only after you confirm, or automatically if you turn that on (off by default).
 - **Alerts** are off until you enter an ntfy topic or webhook URL. They send a short plain-text message, which can include an account's name, when every account of a provider is out, an account is signed out, or an agent didn't come back after a switch.

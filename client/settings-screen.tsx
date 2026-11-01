@@ -194,6 +194,13 @@ export function PreferenceSections({ theme, store }: { theme: PluginSurfaceProps
             onValueChange={(autoRedeem) => save({ autoRedeem })}
           />
           <SettingsSwitch
+            label="Use Claude's paid extra usage when every account is out"
+            hint="An account with extra usage turned on at claude.ai keeps answering past its plan's limits, billed from its monthly budget. Off: it counts as full like the others. On: agents use it only after every other account is full, until the budget runs out."
+            value={settings.values.spendExtraUsage}
+            disabled={settings.saving}
+            onValueChange={(spendExtraUsage) => save({ spendExtraUsage })}
+          />
+          <SettingsSwitch
             label="When every account is out, fork the chat to another provider"
             hint="A stopped chat carries on in a new agent on the next provider with a free account (ChatGPT, then Kimi Code, then the rest), then any other provider Paseo has available. It keeps the conversation so far and, where the provider has permission modes, no more than the original. The original stays as it was."
             value={settings.values.forkOtherProvider}

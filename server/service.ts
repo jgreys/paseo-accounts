@@ -7,9 +7,12 @@ import type {
   PluginLifecycleEvents,
   PluginSessionOpenRequest,
 } from "@getpaseo/plugin/server";
+import type { UsageAccount, UsageReport, UsageScope } from "@getpaseo/plugin/server/usage";
 import {
   FAMILIES,
   FAMILY_LABEL,
+  FamilySchema,
+  extraLeft,
   fallbackFamilies,
   familyLabel,
   type AccountView,
@@ -48,6 +51,7 @@ import { homesDir } from "./paths";
 import { Reopener } from "./reopen";
 import { SwitchGuard } from "./switch-guard";
 import { loadReadings, mergeUsage, saveReadings, showLimit } from "./usage";
+import { usageKey, usageReport } from "./usage-source";
 import { chooseAccount, dedicatedElsewhere, folderAccount, isLimited, isUsable, mostAvailable, type PickOptions } from "./routing";
 import {
   MAIN_ACCOUNT_ID,
@@ -98,6 +102,7 @@ const DEFAULT_PREFERENCES: Preferences = {
   showComposerPill: true,
   autoRedeem: false,
   forkOtherProvider: false,
+  spendExtraUsage: false,
   switchAt: 92,
   pacing: true,
   alertUrl: "",
@@ -191,6 +196,38 @@ export class Service {
 
   setPreferences(prefs: Preferences): void {
     this.prefs = prefs;
+  }
+
+  /**
+   * Accounts for Paseo's own Usage view. Its built-in sources already show each CLI login, and a
+   * Claude or ChatGPT agent's own account (they read the login folder routing gives the session),
+   * so this adds the other accounts, and the account of an agent of any other provider.
+   */
+  async usageAccounts(scope: UsageScope): Promise<UsageAccount[]> {
+    const state = await this.store.read();
+    const entry = (account: StoredAccount): UsageAccount => ({
+      key: usageKey(account.id),
+      label: account.label,
+      harness: FAMILY_LABEL[account.family],
+      input: { accountId: account.id },
+    });
+    const added = state.accounts.filter((account) => account.kind === "managed" && account.home);
+    if (scope.kind === "global") return added.map(entry);
+    const family = this.paseo ? (await this.families.resolve(this.paseo))[scope.provider] : FamilySchema.safeParse(scope.provider).data;
+    if (!family || family === "claude" || family === "codex") return [];
+    for (const account of added) {
+      if (account.family !== family) continue;
+      const patch = Object.entries(await this.adapters[family].env(account.home)).filter(([, value]) => value !== null);
+      if (patch.length > 0 && patch.every(([key, value]) => scope.env[key] === value)) return [entry(account)];
+    }
+    return [];
+  }
+
+  /** The last reading only: opening Paseo's Usage view never costs a provider request. */
+  async usageReportFor(accountId: string): Promise<UsageReport> {
+    const account = (await this.store.read()).accounts.find((candidate) => candidate.id === accountId);
+    if (!account) return { status: "error", error: "This account was removed." };
+    return usageReport(account, this.usage.get(account.id));
   }
 
   /** Remember the plugin's SDK connection for background work (cleanup, failover). */
@@ -383,7 +420,25 @@ export class Service {
     if (!family) return undefined;
     const adapter = this.adapters[family];
     const now = Date.now();
-    const state = await this.store.read();
+    let state = await this.store.read();
+    const named = request.env[ACCOUNT_ENV]?.trim();
+    if (named && request.reason === "create" && !state.bindings[request.agentId]) {
+      const matches = accountsOf(state, family).filter((account) => account.id === named || account.label.toLowerCase() === named.toLowerCase());
+      const [match] = matches;
+      if (match && matches.length === 1) {
+        // A user binding: the agent stays on it like one picked in the app, and still moves off it when it runs out.
+        await this.store.update((draft) => {
+          draft.bindings[request.agentId] ??= { accountId: match.id, source: "user", at: new Date(now).toISOString() };
+        });
+        state = await this.store.read();
+      } else {
+        console.warn(
+          `[paseo-accounts] agent ${request.agentId} asked for ${ACCOUNT_ENV}=${named}, ${
+            matches.length ? "which names several accounts; use its id" : `but no ${FAMILY_LABEL[family]} account has that name`
+          }. Routing it as usual.`,
+        );
+      }
+    }
     const decision = chooseAccount(state, {
       agentId: request.agentId,
       family,
@@ -426,7 +481,8 @@ export class Service {
         decision.skipped ? `; skipped ${decision.skipped.account.label}: ${decision.skipped.why}` : ""
       })`,
     );
-    return { ...request, env: applyEnv(await adapter.env(account.home), request.env) };
+    // The account name is for us, not for the provider CLI.
+    return { ...request, env: applyEnv({ ...(await adapter.env(account.home)), [ACCOUNT_ENV]: null }, request.env) };
   }
 
   /** A turn uses the account from its first token, so a long one keeps its usage fresh too. */
@@ -1435,7 +1491,9 @@ export class Service {
       // Only a live reading may change an account's limit state.
       if (usage.windows.length === 0 || usage.error || usage.cached) return;
       const now = Date.now();
-      const full = usage.windows.find((window) => window.usedPercent >= 100 && window.resetsAt);
+      // Paid extra usage the user lets us spend keeps a full account usable; routing still ranks it after roomier ones.
+      const paid = this.prefs.spendExtraUsage && extraLeft(usage.extra);
+      const full = paid ? undefined : usage.windows.find((window) => window.usedPercent >= 100 && window.resetsAt);
       if (full && !isLimited(account, now)) {
         await this.markLimited(accountId, full.resetsAt ?? new Date(now + WINDOW_LIMIT_MS).toISOString(), "window");
         return;
@@ -1444,7 +1502,7 @@ export class Service {
       // windows, and a fresh limit is trusted for a while (it may be on a window we can't see).
       const settled = account.limitedAt ? now - Date.parse(account.limitedAt) > LIMIT_TRUST_MS : true;
       const roomy = Math.max(...usage.windows.map((window) => window.usedPercent)) < 90;
-      if (!full && account.limitedUntil && account.limitKind === "window" && settled && roomy) {
+      if (!full && account.limitedUntil && account.limitKind === "window" && ((settled && roomy) || paid)) {
         await this.store.update((draft) => {
           const target = findAccount(draft, accountId);
           if (!target) return;
@@ -2189,6 +2247,9 @@ function delay(ms: number): Promise<void> {
 async function withTimeout(task: Promise<unknown>, ms: number): Promise<void> {
   await Promise.race([task.catch(() => undefined), delay(ms)]);
 }
+
+/** Set at creation (`paseo run --env PASEO_ACCOUNT=Work`) to start an agent on a named account. */
+export const ACCOUNT_ENV = "PASEO_ACCOUNT";
 
 function log(message: string, error: unknown): void {
   console.error(`[paseo-accounts] ${message}`, describe(error));
