@@ -94,7 +94,7 @@ export class ClaudeAdapter implements FamilyAdapter {
     return {
       signedIn,
       email,
-      plan: str(status.subscriptionType),
+      plan: claudePlan(str(status.subscriptionType), signedIn ? (await readCredentials(home).catch(() => null))?.rateLimitTier ?? null : null),
       organization: str(status.orgName),
       identity: email ? `${orgId ?? "personal"}|${email.toLowerCase()}` : null,
     };
@@ -362,12 +362,22 @@ function friendlyFailure(message: string): string {
   return message.replace(/^Login failed:\s*/i, "Sign-in failed: ");
 }
 
+/**
+ * Anthropic renamed Max 20x to Ultra (2026-10-30), but `auth status` still says "max" for both
+ * tiers; the login's rate tier tells them apart.
+ */
+export function claudePlan(subscription: string | null, tier: string | null): string | null {
+  if (subscription === "max" && tier && /max_20x|ultra/i.test(tier)) return "ultra";
+  return subscription;
+}
+
 // --------------------------------------------------------------------------- credentials (read-only)
 
 interface Credentials {
   accessToken: string | null;
   expiresAt: number | null;
   scopes: string[] | null;
+  rateLimitTier: string | null;
 }
 
 function keychainAccount(): string {
@@ -406,6 +416,7 @@ function parseCredentials(raw: string): Credentials | null {
     accessToken: str(oauth.accessToken),
     expiresAt: typeof oauth.expiresAt === "number" ? oauth.expiresAt : null,
     scopes: Array.isArray(oauth.scopes) ? oauth.scopes.filter((scope): scope is string => typeof scope === "string") : null,
+    rateLimitTier: str(oauth.rateLimitTier),
   };
 }
 

@@ -33,6 +33,7 @@ export function peakUsage(windows: readonly UsageWindow[]): UsageWindow | null {
 
 const PLAN_LABELS: Record<string, string> = {
   max: "Max",
+  ultra: "Ultra",
   pro: "Pro",
   prolite: "Pro Lite",
   team: "Team",

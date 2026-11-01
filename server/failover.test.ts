@@ -419,6 +419,29 @@ describe("signing out the CLI login", () => {
   });
 });
 
+describe("moving several agents", () => {
+  it("moves each one, skips what can't move and says why", async () => {
+    const { service, store, reopened } = await setUp(
+      {
+        accounts: [account(MAIN, "marketing", "main"), account(HELLO, "hello", "managed"), { ...account("off", "off", "managed"), signedIn: false }] as never,
+        defaults: { claude: MAIN, codex: null },
+        sessions: { [AGENT]: { accountId: MAIN, family: "claude", openedAt: new Date().toISOString() } },
+      },
+      () => ({ kind: "window", resetsAt: inFuture(), message: "" }),
+    );
+    const paseo = fakePaseo().paseo as never;
+
+    const moved = await service.setAgentsAccount(paseo, [AGENT], HELLO);
+    expect(moved.reopened).toEqual([AGENT]);
+    expect(moved.skipped).toEqual([]);
+    expect((await store.read()).bindings[AGENT]).toMatchObject({ accountId: HELLO, source: "user" });
+    expect(reopened).toEqual([AGENT]);
+
+    const refused = await service.setAgentsAccount(paseo, [AGENT], "off");
+    expect(refused.skipped).toEqual([{ agentId: AGENT, reason: "off is signed out. Sign it in first." }]);
+  });
+});
+
 describe("disabling an account", () => {
   it("moves its agents off and back, and won't disable the last usable account", async () => {
     const { service, store, reopened } = await setUp(

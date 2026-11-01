@@ -139,6 +139,13 @@ export const setAccountEnabled = defineRpc({
   }),
 });
 
+/** Moves several agents to one account (or back to following the default). */
+export const setAgentsAccount = defineRpc({
+  name: "paseo-accounts.agents.accounts",
+  input: z.object({ agentIds: z.array(z.string()).min(1).max(200), accountId: z.string().nullable() }),
+  output: ReopenSummarySchema.extend({ skipped: z.array(z.object({ agentId: z.string(), reason: z.string() })) }),
+});
+
 /** Carries an agent's work on in a new agent on another provider (`to`, or the first viable one). */
 export const forkAgent = defineRpc({
   name: "paseo-accounts.agents.fork",

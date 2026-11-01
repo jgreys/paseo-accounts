@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0 - 2026-11-01
+
+- **Select** in the Agents tab moves several agents to another account at once. Agents that can't move are listed with the reason.
+- Claude Max 20x accounts show as **Ultra**, Anthropic's new name for the plan. Verified Ultra accounts have no 5-hour limit in Claude Code, so only their weekly limits show.
+- The Accounts screen refreshes when you open it, switch host or tab, and when the app comes back to the foreground.
+
 ## 1.0.4 - 2026-10-21
 
 - Every Claude and ChatGPT account can be signed out (**Sign out**) without removing it; **Sign in** brings it back. Added accounts can still be removed.

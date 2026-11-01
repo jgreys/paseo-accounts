@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ClaudeAdapter } from "./claude";
+import { ClaudeAdapter, claudePlan } from "./claude";
 
 const { spawn } = vi.hoisted(() => ({ spawn: vi.fn() }));
 vi.mock("node:child_process", () => ({ spawn }));
@@ -71,5 +71,15 @@ describe("Claude sign-in process cleanup", () => {
     child.stderr.write(failure.subarray(cut));
     child.emit("close", 1);
     await expect(login.finished).resolves.toEqual({ ok: false, message: "Sign-in failed: no account for zoë@example.com" });
+  });
+});
+
+describe("claudePlan", () => {
+  it("names Max 20x logins Ultra and leaves the rest alone", () => {
+    expect(claudePlan("max", "default_claude_max_20x")).toBe("ultra");
+    expect(claudePlan("max", "default_claude_ultra")).toBe("ultra");
+    expect(claudePlan("max", "default_claude_max_5x")).toBe("max");
+    expect(claudePlan("max", null)).toBe("max");
+    expect(claudePlan("pro", "default_claude_max_20x")).toBe("pro");
   });
 });

@@ -18,6 +18,7 @@ import {
   signOutAccount,
   renameAccount,
   setAgentAccount,
+  setAgentsAccount,
   setDefaultAccount,
   setAccountEnabled,
   setAccountFolders,
@@ -105,6 +106,7 @@ export default function contribute(server: PluginServerContext) {
   });
   server.handle(redeemReset, ({ accountId, agentId }, { paseo }) => service.redeem(paseo, accountId, agentId));
   server.handle(setAgentAccount, ({ agentId, accountId }, { paseo }) => service.setAgentAccount(paseo, agentId, accountId));
+  server.handle(setAgentsAccount, ({ agentIds, accountId }, { paseo }) => service.setAgentsAccount(paseo, agentIds, accountId));
   server.handle(forkAgent, ({ agentId, to }, { paseo }) => service.forkAgent(paseo, agentId, to));
   server.handle(setAccountPriority, async ({ accountId, priority }) => {
     await service.setPriority(accountId, priority);

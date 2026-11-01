@@ -1,7 +1,7 @@
 import { useHosts, type PluginSurfaceProps } from "@getpaseo/plugin/client";
 import { Icon, Modal } from "@getpaseo/plugin/client/react-native";
 import { useCallback, useEffect, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { AppState, Pressable, ScrollView, Text, View } from "react-native";
 import { zoneNote } from "../shared/format";
 import { FAMILY_HEADING, type AccountView, type Family } from "../shared/model";
 import { AccountRow, SectionLabel } from "./account-row";
@@ -42,6 +42,15 @@ export function AccountsSurface(props: PluginSurfaceProps & { store: AccountsSto
   const offline = hostStatus !== undefined && hostStatus !== "online";
   // Keep usage moving while the screen is open.
   useEffect(() => store.watch(VISIBLE_POLL_MS), [store]);
+  // Polling alone can leave an old snapshot up: refresh on opening, switching host or tab, and when
+  // the app comes back to the foreground (a phone that slept with the screen open).
+  useEffect(() => void store.refresh(), [store, host.id, tab]);
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (status) => {
+      if (status === "active") void store.refresh();
+    });
+    return () => subscription.remove();
+  }, [store]);
 
   const families = shownFamilies(state);
   const openAgent = navigation ? (agentId: string) => navigation.openAgent({ agentId, serverId: host.id }) : undefined;

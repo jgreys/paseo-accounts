@@ -1818,6 +1818,36 @@ export class Service {
     return this.reconcile(paseo, "manual", [agentId]);
   }
 
+  /**
+   * Moves several agents at once. ChatGPT conversations with history are skipped: moving one starts a
+   * new agent, which the user should ask for one conversation at a time.
+   */
+  async setAgentsAccount(
+    paseo: PaseoApi,
+    agentIds: readonly string[],
+    accountId: string | null,
+  ): Promise<ReopenSummary & { skipped: Array<{ agentId: string; reason: string }> }> {
+    const summary = { ...emptySummary(), skipped: [] as Array<{ agentId: string; reason: string }> };
+    const families = await this.families.resolve(paseo);
+    for (const agentId of agentIds) {
+      const info = await agentInfo(paseo, agentId);
+      const family = info ? families[info.provider] : undefined;
+      if (info && family && !this.adapters[family].portable && info.hasHistory) {
+        summary.skipped.push({ agentId, reason: "ChatGPT conversations move one at a time" });
+        continue;
+      }
+      try {
+        const moved = await this.setAgentAccount(paseo, agentId, accountId);
+        summary.reopened.push(...moved.reopened);
+        summary.deferred.push(...moved.deferred);
+        summary.failed.push(...moved.failed);
+      } catch (error) {
+        summary.skipped.push({ agentId, reason: describe(error) });
+      }
+    }
+    return summary;
+  }
+
   async rename(accountId: string, label: string): Promise<void> {
     const state = await this.store.update((draft) => {
       const account = findAccount(draft, accountId);
