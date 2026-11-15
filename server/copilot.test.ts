@@ -30,6 +30,12 @@ describe("Copilot CLI", () => {
     expect(await new CopilotAdapter().env(home)).toMatchObject({ COPILOT_HOME: home });
   });
 
+  it("recognizes a Copilot config with the CLI's leading comments", async () => {
+    home = mkdtempSync(join(tmpdir(), "paseo-accounts-copilot-"));
+    writeFileSync(join(home, "config.json"), `// User settings belong in settings.json.\n// This file is managed automatically.\n${JSON.stringify({ lastLoggedInUser: { host: "https://github.com", login: "octocat" } })}`);
+    expect(await new CopilotAdapter().identity(home)).toMatchObject({ signedIn: true, email: "octocat", identity: "copilot|github.com|octocat" });
+  });
+
   it("tells spent credits from rate limits, and spots sign-outs", () => {
     expect(detectCopilotLimit(failed("You've run out of your included AI credits for the month."))?.kind).toBe("budget");
     expect(detectCopilotLimit(failed("You've reached your weekly rate limit."))?.kind).toBe("window");
