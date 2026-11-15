@@ -24,7 +24,8 @@ const TOKEN_KEYS = ["COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"];
 /** The GitHub user a Copilot home last signed in as (`config.json` → `lastLoggedInUser`). */
 export async function copilotUser(home: string): Promise<{ login: string; host: string } | null> {
   try {
-    const config = JSON.parse(await readFile(join(home, "config.json"), "utf8")) as Record<string, unknown>;
+    const text = await readFile(join(home, "config.json"), "utf8");
+    const config = JSON.parse(text.replace(/^(?:\s*\/\/[^\r\n]*(?:\r?\n|$))+/, "")) as Record<string, unknown>;
     const user = (config.lastLoggedInUser ?? config.last_logged_in_user) as { login?: unknown; host?: unknown } | undefined;
     if (typeof user?.login !== "string" || !user.login) return null;
     return { login: user.login, host: typeof user.host === "string" ? user.host : "https://github.com" };
