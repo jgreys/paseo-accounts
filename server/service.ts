@@ -40,6 +40,7 @@ import {
 } from "./adapter";
 import { ActivityLog } from "./activity";
 import { sendAlert } from "./alerts";
+import { sameIdentity } from "./codex";
 import { accountForecast, hostTimeZone, hostWhen, loadHistory, record, saveHistory, trend, type History } from "./history";
 import { FamilyResolver } from "./families";
 import { CONTINUED_FROM_LABEL, continueInNewAgent, type Continuation } from "./handoff";
@@ -2088,7 +2089,12 @@ export class Service {
 
     const state = await this.store.read();
     const existing = findAccount(state, session.accountId);
-    if (existing?.kind === "managed" && existing.identity && identity.identity && existing.identity !== identity.identity) {
+    if (
+      existing?.kind === "managed" &&
+      existing.identity &&
+      identity.identity &&
+      !sameIdentity(existing, identity.identity, identity.email)
+    ) {
       // Signing an account back in must not quietly turn it into a different login.
       if (session.home) await adapter.logout(session.home).catch(() => undefined);
       const expected = existing.email ?? existing.label;
@@ -2098,10 +2104,14 @@ export class Service {
       );
     }
     // The CLI's own login is whatever the user signs it into; only added accounts must be distinct.
+    const newIdentity = identity.identity;
     const duplicate =
-      identity.identity && existing?.kind !== "main"
+      newIdentity && existing?.kind !== "main"
         ? accountsOf(state, session.family).find(
-            (account) => account.id !== session.accountId && account.identity === identity.identity,
+            (account) =>
+              account.id !== session.accountId &&
+              account.identity !== null &&
+              sameIdentity(account, newIdentity, identity.email),
           )
         : undefined;
     if (duplicate) {
