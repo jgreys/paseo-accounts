@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Two ChatGPT logins in the same Team or Business workspace can now both be added: each member's account is identified by email as well as by workspace, so the second one no longer reports "already added".
+
 ## 1.1.0 - 2026-11-01
 
 - **Select** in the Agents tab moves several agents to another account at once. Agents that can't move are listed with the reason.

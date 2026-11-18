@@ -14,6 +14,7 @@ import { providerCommand } from "./binaries";
 import { codexSqliteHome, prepareCodexHome } from "./homes";
 import { detectCodexLimit, detectCodexSignOut } from "./limits";
 import { run } from "./process";
+import type { StoredAccount } from "./state";
 
 /** The originator Codex's own CLI logs in with; the sign-in service knows it. */
 const CLIENT_NAME = "codex_cli_rs";
@@ -23,6 +24,31 @@ type Json = Record<string, unknown>;
 const MAX_FRAME_BYTES = 1024 * 1024;
 /** Its steps time out one by one, so without this a stuck read could keep its callers waiting ~150 s. */
 const READ_DEADLINE_MS = 60_000;
+
+/**
+ * Stable key for a ChatGPT login. The workspace (account) ID separates a personal plan from a
+ * Team workspace on the same email, and the email separates members of the same workspace.
+ * Without the workspace ID, email plus plan keeps two personal sign-ins distinct.
+ */
+export function codexIdentity(accountId: string | null, email: string | null, plan: string | null): string | null {
+  if (accountId) return email ? `chatgpt|${accountId}|${email.toLowerCase()}` : `chatgpt|${accountId}`;
+  return email ? `chatgpt-email|${email.toLowerCase()}|${plan ?? "unknown"}` : null;
+}
+
+/**
+ * Whether `incoming` is the same login as what `stored` already has. Accounts saved before the
+ * email became part of the key still carry a legacy `chatgpt|<workspace>` identity: that one
+ * matches its own email only, or anything when no email was ever learned for it.
+ */
+export function sameIdentity(stored: StoredAccount, incoming: string, incomingEmail: string | null): boolean {
+  if (stored.identity === incoming) return true;
+  if (stored.identity === null) return false;
+  const storedParts = stored.identity.split("|");
+  if (storedParts.length !== 2 || storedParts[0] !== "chatgpt") return false;
+  const incomingParts = incoming.split("|");
+  if (incomingParts.length !== 3 || incomingParts[0] !== "chatgpt" || incomingParts[1] !== storedParts[1]) return false;
+  return stored.email === null || stored.email.toLowerCase() === incomingEmail?.toLowerCase();
+}
 
 /** Newline-delimited JSON-RPC with `codex app-server` (no `jsonrpc` field on the wire). */
 class AppServer {
@@ -312,9 +338,7 @@ export class CodexAdapter implements FamilyAdapter {
           email,
           plan,
           organization: null,
-          // The ChatGPT account (workspace) ID tells a personal plan from a Team workspace on the same
-          // email; without it, fall back to email plus plan so those two still stay distinct.
-          identity: accountId ? `chatgpt|${accountId}` : email ? `chatgpt-email|${email.toLowerCase()}|${plan ?? "unknown"}` : null,
+          identity: codexIdentity(accountId, email, plan),
         },
         usage,
       };
